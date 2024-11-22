@@ -19,15 +19,25 @@ func NewTorrentDao() *TorrentDao {
 }
 
 func (dbc *TorrentDao) SaveTorrent(torrent *dto.Torrent) {
-	var torrentId int
-	err := dbc.Db.QueryRow(
-		"INSERT INTO torrents(name, status, filepath, output_directory, created, updated) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
-		torrent.Name, torrent.Status, torrent.Filepath, torrent.OutputDirectory, torrent.Created, torrent.Updated,
-	).Scan(&torrentId)
-	if err != nil {
-		log.Fatalln("Could not create torrent: " + err.Error())
+	if torrent.Id == 0 {
+		var torrentId int
+		err := dbc.Db.QueryRow(
+			"INSERT INTO torrents(name, status, filepath, output_directory, created, updated) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
+			torrent.Name, torrent.Status, torrent.Filepath, torrent.OutputDirectory, torrent.Created, torrent.Updated,
+		).Scan(&torrentId)
+		if err != nil {
+			log.Fatalln("Could not create torrent: " + err.Error())
+		}
+		torrent.Id = torrentId
+	} else {
+		_, err := dbc.Db.Exec(
+			"UPDATE torrents SET name = $1, status = $2, filepath = $3, output_directory = $4, updated = $5 WHERE id = $6",
+			torrent.Name, torrent.Status, torrent.Filepath, torrent.OutputDirectory, torrent.Updated, torrent.Id,
+		)
+		if err != nil {
+			log.Fatalln("Could not update torrent: " + err.Error())
+		}
 	}
-	torrent.Id = torrentId
 }
 
 func (dbc *TorrentDao) GetTorrentById(torrentId int) *dto.Torrent {

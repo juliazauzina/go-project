@@ -29,10 +29,12 @@ func (scanner *DownloadedTorrentsScanner) Scan() {
 
 	for i := 0; i < activeTorrentsFromDB.FinalTorrentCount; i++ {
 		if activeTorrentsFromDB.FinalTorrentArray[i].Torrent.Status == "DOWNLOADING" && activeTorrentsFromDB.FinalTorrentArray[i].TransmissionTorrent.Done == 100 {
-			run, err := scanner.cli.Run("mv", []string{activeTorrentsFromDB.FinalTorrentArray[i].Torrent.OutputDirectory, mediaDir + "/" + activeTorrentsFromDB.FinalTorrentArray[i].Torrent.Name})
+			_, err := scanner.cli.Run("mv", []string{activeTorrentsFromDB.FinalTorrentArray[i].Torrent.OutputDirectory, mediaDir + "/" + activeTorrentsFromDB.FinalTorrentArray[i].Torrent.Name})
 			if err != nil {
-				fmt.Println("Error moving file to filesystem: ", run)
+				fmt.Println("Error moving file to filesystem: ", err.Error(), activeTorrentsFromDB.FinalTorrentArray[i].Torrent.OutputDirectory, mediaDir+"/"+activeTorrentsFromDB.FinalTorrentArray[i].Torrent.Name)
 			}
+			activeTorrentsFromDB.FinalTorrentArray[i].Torrent.Status = "DONE"
+			scanner.torrentService.SaveTorrent(activeTorrentsFromDB.FinalTorrentArray[i].Torrent)
 		}
 	}
 	fmt.Println("Scanning downloaded torrents...")
